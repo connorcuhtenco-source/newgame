@@ -44,6 +44,9 @@ export class PlayerController {
 
     this._buildStateMachine();
     Events.on('combat:heavyHitLanded', () => this.bumpFov(Settings.heavyHitFov - Settings.baseFov, 0.25));
+    // Subtle FOV punch on each swing to sell physical exertion.
+    Events.on('combat:swing', ({ combo }) => this.bumpFov((combo >= 4 ? 5 : 3), 0.18));
+    Events.on('combat:heavy', () => this.bumpFov(6, 0.22));
   }
 
   _buildStateMachine() {
