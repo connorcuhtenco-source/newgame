@@ -3,13 +3,13 @@
 // single source of truth that the HUD reads and that CombatSystem/World feed.
 // Saves to localStorage so progress survives reloads (and death keeps tiers).
 
-import Events from '../core/EventBus.js';
-import Settings from '../config/Settings.js';
-import { xpToNext, MAX_LEVEL, DEATH_XP_PENALTY } from '../config/Progression.js';
-import { getRace } from '../config/Races.js';
-import { SoulReaperPath } from './paths/SoulReaperPath.js';
-import { QuincyPath } from './paths/QuincyPath.js';
-import { HollowPath } from './paths/HollowPath.js';
+import Events from './EventBus.js';
+import Settings from './Settings.js';
+import { xpToNext, MAX_LEVEL, DEATH_XP_PENALTY } from './Progression.js';
+import { getRace } from './Races.js';
+import { SoulReaperPath } from './SoulReaperPath.js';
+import { QuincyPath } from './QuincyPath.js';
+import { HollowPath } from './HollowPath.js';
 
 const PATHS = {
   soulReaper: SoulReaperPath,

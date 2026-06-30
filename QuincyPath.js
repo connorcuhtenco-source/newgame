@@ -3,8 +3,8 @@
 // spent on a skill tree to unlock arrow types (Explosive, Tracking). The
 // Vollständig ultimate unlocks after surviving a wave-defense trial.
 
-import Events from '../../core/EventBus.js';
-import { MILESTONES } from '../../config/Progression.js';
+import Events from './EventBus.js';
+import { MILESTONES } from './Progression.js';
 
 export class QuincyPath {
   constructor(pm) {

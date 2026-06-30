@@ -3,9 +3,9 @@
 // locks in the race (sets base stats via ProgressionManager) and signals the
 // Game to spawn the player into the starting map.
 
-import Events from '../core/EventBus.js';
-import Audio from '../core/AudioManager.js';
-import RACES from '../config/Races.js';
+import Events from './EventBus.js';
+import Audio from './AudioManager.js';
+import RACES from './Races.js';
 
 export class RaceSelect {
   constructor(rootEl, onSelect) {

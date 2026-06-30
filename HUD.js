@@ -3,7 +3,7 @@
 // combo counter, crosshair feedback, reiatsu aura vignette, milestone toasts,
 // and the death/respawn banner. Pure presentation — holds no game logic.
 
-import Events from '../core/EventBus.js';
+import Events from './EventBus.js';
 
 export class HUD {
   constructor(rootEl) {

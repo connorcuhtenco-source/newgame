@@ -3,7 +3,7 @@
 // to test combat & progression. Keeps the active enemy list and updates AI.
 
 import * as THREE from 'three';
-import Events from '../core/EventBus.js';
+import Events from './EventBus.js';
 import { Enemy } from './Enemy.js';
 
 export class World {

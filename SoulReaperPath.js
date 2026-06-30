@@ -4,8 +4,8 @@
 // a little Reiryoku. Milestones emit events the world/UI react to (open the
 // instance, queue the boss fight, etc.).
 
-import Events from '../../core/EventBus.js';
-import { MILESTONES } from '../../config/Progression.js';
+import Events from './EventBus.js';
+import { MILESTONES } from './Progression.js';
 
 export class SoulReaperPath {
   constructor(pm) {

@@ -9,9 +9,9 @@
 // Also owns the player's health and resolves block/parry on incoming hits.
 
 import * as THREE from 'three';
-import Input from '../core/Input.js';
-import Events from '../core/EventBus.js';
-import Settings from '../config/Settings.js';
+import Input from './Input.js';
+import Events from './EventBus.js';
+import Settings from './Settings.js';
 
 export class CombatSystem {
   constructor({ player, world, viewmodel, stats }) {

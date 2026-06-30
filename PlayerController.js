@@ -5,11 +5,11 @@
 // while sprinting, dashing, or on heavy-hit feedback.
 
 import * as THREE from 'three';
-import Input from '../core/Input.js';
-import Events from '../core/EventBus.js';
-import Settings from '../config/Settings.js';
-import VFX from '../core/VFX.js';
-import { StateMachine, State } from '../core/StateMachine.js';
+import Input from './Input.js';
+import Events from './EventBus.js';
+import Settings from './Settings.js';
+import VFX from './VFX.js';
+import { StateMachine, State } from './StateMachine.js';
 
 const EYE_HEIGHT = 1.6;
 

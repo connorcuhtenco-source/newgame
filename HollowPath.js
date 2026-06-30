@@ -3,8 +3,8 @@
 // player through tiers: Fishbone → Gillian → Adjuchas → Arrancar. Hard rule:
 // once a tier is reached the player can NEVER be downgraded.
 
-import Events from '../../core/EventBus.js';
-import { MILESTONES } from '../../config/Progression.js';
+import Events from './EventBus.js';
+import { MILESTONES } from './Progression.js';
 
 export class HollowPath {
   constructor(pm) {

@@ -8,13 +8,13 @@ import Input from './Input.js';
 import Events from './EventBus.js';
 import Audio from './AudioManager.js';
 import VFX from './VFX.js';
-import Settings from '../config/Settings.js';
-import Progression from '../progression/ProgressionManager.js';
-import { World } from '../world/World.js';
-import { PlayerController } from '../player/PlayerController.js';
-import { CombatSystem } from '../player/CombatSystem.js';
-import { Viewmodel } from '../player/Viewmodel.js';
-import { HUD } from '../ui/HUD.js';
+import Settings from './Settings.js';
+import Progression from './ProgressionManager.js';
+import { World } from './World.js';
+import { PlayerController } from './PlayerController.js';
+import { CombatSystem } from './CombatSystem.js';
+import { Viewmodel } from './Viewmodel.js';
+import { HUD } from './HUD.js';
 
 class Game {
   constructor() {

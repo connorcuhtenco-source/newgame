@@ -2,9 +2,9 @@
 // hands control over once a race is chosen. This is the only script referenced
 // by index.html (everything else is pulled in via ES module imports).
 
-import game from './core/Game.js';
-import Audio from './core/AudioManager.js';
-import { RaceSelect } from './ui/RaceSelect.js';
+import game from './Game.js';
+import Audio from './AudioManager.js';
+import { RaceSelect } from './RaceSelect.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gl');

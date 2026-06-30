@@ -24,15 +24,16 @@ python3 -m http.server 8000
 
 ## Structure
 
+All files live flat at the repository root next to `index.html`:
+
 ```
 index.html              # entry: race-select landing + game layer + HUD
-css/soulrift.css        # the single stylesheet
-js/
-  main.js               # bootstrap (the only <script> referenced)
-  core/                 # EventBus, Input, AudioManager, VFX, StateMachine, Game
-  config/               # Races + Progression + Settings
-  player/               # PlayerController, CombatSystem, Viewmodel
-  progression/          # ProgressionManager + paths/{SoulReaper,Quincy,Hollow}
-  world/                # World (arena) + Enemy (chase AI)
-  ui/                   # RaceSelect (landing) + HUD
+soulrift.css            # the single stylesheet
+main.js                 # bootstrap (the only <script> referenced)
+EventBus.js, Input.js, AudioManager.js, VFX.js, StateMachine.js, Game.js   # core
+Races.js, Progression.js, Settings.js                                      # config
+PlayerController.js, CombatSystem.js, Viewmodel.js                         # player
+ProgressionManager.js, SoulReaperPath.js, QuincyPath.js, HollowPath.js    # progression
+World.js, Enemy.js                                                         # world
+RaceSelect.js, HUD.js                                                      # ui
 ```

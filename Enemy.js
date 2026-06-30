@@ -4,8 +4,8 @@
 // through the ProgressionManager so each race converts kills into its currency.
 
 import * as THREE from 'three';
-import Events from '../core/EventBus.js';
-import Audio from '../core/AudioManager.js';
+import Events from './EventBus.js';
+import Audio from './AudioManager.js';
 
 export class Enemy {
   constructor(scene, spawn, opts = {}) {
