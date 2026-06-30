@@ -124,12 +124,14 @@ local function resolveDamage(attackerState, ctx, blocked: boolean)
 			position = ctx.hitPosition,
 			attacker = attackerState.player,
 			victim = ctx.victim,
+			victimChar = ctx.victimChar,
 		})
 	else
 		broadcastEffect("Hit", {
 			position = ctx.hitPosition,
 			attacker = attackerState.player,
 			victim = ctx.victim,
+			victimChar = ctx.victimChar,
 			combo = combo,
 		})
 		-- The finisher knocks the (unguarded) victim back.

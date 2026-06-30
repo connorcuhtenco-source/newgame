@@ -14,6 +14,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Remotes = require(ReplicatedStorage.Combat.Remotes)
@@ -25,6 +26,7 @@ local InputController = require(script.InputController)
 local ViewmodelController = require(script.ViewmodelController)
 local CameraShaker = require(script.CameraShaker)
 local EffectsController = require(script.EffectsController)
+local EnemyVfx = require(script.EnemyVfx)
 
 local localPlayer = Players.LocalPlayer
 
@@ -168,7 +170,11 @@ Remotes.CombatEffect.OnClientEvent:Connect(function(effectKind: string, payload)
 	payload = payload or {}
 	local pos = payload.position
 	if effectKind == "Hit" then
-		if pos and payload.attacker ~= localPlayer then
+		-- Full enemy reaction (spark + 0.05s white flash + flinch) on the struck
+		-- character; fall back to a bare spark if we only got a position.
+		if payload.victimChar then
+			EnemyVfx.hitReaction(payload.victimChar, pos)
+		elseif pos and payload.attacker ~= localPlayer then
 			EffectsController.hit(pos)
 		end
 	elseif effectKind == "Block" then
@@ -219,6 +225,18 @@ if localPlayer.Character then
 end
 localPlayer.CharacterAdded:Connect(onCharacter)
 
+-- == Enemy VFX: auto-dress any model tagged "Hollow" =====================
+
+local function setupHollow(inst: Instance)
+	if inst:IsA("Model") then
+		EnemyVfx.setupHollow(inst)
+	end
+end
+for _, tagged in CollectionService:GetTagged("Hollow") do
+	setupHollow(tagged)
+end
+CollectionService:GetInstanceAddedSignal("Hollow"):Connect(setupHollow)
+
 -- == Boot ================================================================
 
 viewmodel:start()
@@ -226,4 +244,11 @@ cameraShaker:start()
 
 RunService.RenderStepped:Connect(function(dt)
 	stateMachine:update(dt)
+
+	-- Feed the viewmodel the player's planar speed (0..1) for bob/sway.
+	if rootPart then
+		local v = rootPart.AssemblyLinearVelocity
+		local planar = Vector3.new(v.X, 0, v.Z).Magnitude
+		viewmodel:setSpeed01(planar / math.max(baseWalkSpeed, 1))
+	end
 end)

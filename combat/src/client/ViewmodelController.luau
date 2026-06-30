@@ -3,11 +3,16 @@
 -- camera. It is purely cosmetic/local: the real, authoritative weapon used for
 -- server validation is the one welded to the player's actual character.
 --
--- Two responsibilities:
---   1. Keep the viewmodel glued to the camera every render frame.
---   2. Drive the swing/block POSES. Crucially, the swing physically sweeps the
---      blade through an arc so the DmgPoint attachments move through space — that
---      motion is what the WeaponHitbox raycasts along.
+-- Presentation is composed every render frame as:
+--
+--   camera.CFrame * REST * sway * swingArc
+--
+--   * REST     — the resting hold pose (or BLOCK pose while guarding)
+--   * sway     — ViewmodelSway spring offset (look-lag, bob, breathing)
+--   * swingArc — SwingArc procedural anticipation/strike/recovery pose
+--
+-- During a strike a MotionTrail ribbon streaks off the blade, and a small camera
+-- roll/tilt (from SwingArc) is applied to sell the momentum of the cut.
 --
 -- If you provide ReplicatedStorage.Combat.Assets.Viewmodel (a rigged Model with
 -- a weapon containing "DmgPoint" attachments) it is used and its animations are
@@ -19,6 +24,9 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Combat.CombatConfig)
+local ViewmodelSway = require(script.ViewmodelSway)
+local SwingArc = require(script.SwingArc)
+local MotionTrail = require(script.MotionTrail)
 
 local ViewmodelController = {}
 ViewmodelController.__index = ViewmodelController
@@ -80,16 +88,23 @@ function ViewmodelController.new(): ViewmodelController
 		_tracks = {} :: { [string]: AnimationTrack },
 		_running = false,
 
-		-- Procedural swing state (fallback + extra blade sweep on top of anims).
+		_sway = ViewmodelSway.new(),
+		_trail = nil :: MotionTrail.MotionTrail?,
+		_speed01 = 0,
+
+		-- Procedural swing state.
 		_swinging = false,
 		_swingT = 0,
-		_swingDur = 0.001,
-		_swingArc = CFrame.identity,
+		_swingDur = SwingArc.duration(),
+		_swingCombo = 1,
 		_blocking = false,
 	}, ViewmodelController)
 
 	self:_buildModel()
 	self:_loadAnimations()
+	if self._weapon then
+		self._trail = MotionTrail.new(self._weapon)
+	end
 	return self :: any
 end
 
@@ -180,29 +195,24 @@ function ViewmodelController:getWeapon(): Instance?
 	return self._weapon
 end
 
--- Plays hit `combo`'s swing. Alternates the arc direction for a real combo feel.
+-- Fed by the bootstrap each frame: planar move speed normalized 0..1.
+function ViewmodelController:setSpeed01(value: number)
+	self._speed01 = math.clamp(value, 0, 1)
+end
+
+-- Plays hit `combo`'s swing: optional authored anim + procedural arc + trail.
 function ViewmodelController:playSwing(combo: number)
 	local track = self._tracks["Swing" .. combo]
 	if track then
 		track:Play(0.05)
 	end
 
-	-- Procedural arc: alternate diagonal slashes; the finisher is a big overhead.
-	local dir = (combo % 2 == 1) and 1 or -1
-	local startArc, endArc
-	if combo >= CombatConfig.Combo.MaxHits then
-		startArc = CFrame.Angles(math.rad(-70), 0, 0)
-		endArc = CFrame.Angles(math.rad(55), 0, 0)
-	else
-		startArc = CFrame.Angles(math.rad(-25), math.rad(35 * dir), math.rad(60 * dir))
-		endArc = CFrame.Angles(math.rad(20), math.rad(-40 * dir), math.rad(-50 * dir))
-	end
-
 	self._swinging = true
 	self._swingT = 0
-	self._swingDur = CombatConfig.Combo.Frames.Windup + CombatConfig.Combo.Frames.Active
-	self._swingStartArc = startArc
-	self._swingEndArc = endArc
+	self._swingCombo = combo
+	if self._trail then
+		self._trail:slash(self._swingDur + 0.05)
+	end
 end
 
 function ViewmodelController:setBlocking(isBlocking: boolean)
@@ -236,11 +246,6 @@ function ViewmodelController:playStun(duration: number)
 	end
 end
 
-local function easeOutCubic(t: number): number
-	local f = 1 - t
-	return 1 - f * f * f
-end
-
 function ViewmodelController:_render(dt: number)
 	local model = self._model
 	local root = self._root
@@ -250,23 +255,34 @@ function ViewmodelController:_render(dt: number)
 	end
 
 	local baseOffset = self._blocking and BLOCK_OFFSET or REST_OFFSET
-	local swingArc = CFrame.identity
 
+	-- Spring hand-sway (look-lag, bob, breathing).
+	local swayOffset = self._sway:update(dt, camera, self._speed01)
+
+	-- Procedural swing arc + coupled camera tilt.
+	local swingOffset = CFrame.identity
 	if self._swinging then
 		self._swingT += dt
 		local alpha = math.clamp(self._swingT / self._swingDur, 0, 1)
-		swingArc = (self._swingStartArc :: CFrame):Lerp(self._swingEndArc :: CFrame, easeOutCubic(alpha))
+		local result = SwingArc.evaluate(self._swingCombo, alpha)
+		swingOffset = result.offset
+		-- Tilt the view INTO the swing (applied after the camera is positioned).
+		if result.cameraRoll ~= 0 or result.cameraPitch ~= 0 then
+			camera.CFrame = camera.CFrame * CFrame.Angles(result.cameraPitch, 0, result.cameraRoll)
+		end
 		if alpha >= 1 then
 			self._swinging = false
 		end
 	end
 
-	local target = camera.CFrame * baseOffset * swingArc
-	model:PivotTo(target)
+	model:PivotTo(camera.CFrame * baseOffset * swayOffset * swingOffset)
 end
 
 function ViewmodelController:Destroy()
 	self:stop()
+	if self._trail then
+		self._trail:Destroy()
+	end
 	if self._model then
 		self._model:Destroy()
 	end

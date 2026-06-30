@@ -19,6 +19,7 @@ export type EffectPayload = {
 	position: Vector3?,
 	attacker: Player?,
 	victim: Player?,
+	victimChar: Model?, -- struck character (works for non-player enemies too)
 	other: Player?, -- the second fighter in a clash
 	combo: number?,
 }

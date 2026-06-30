@@ -6,6 +6,9 @@ mechanic, complete with spark VFX, metallic SFX and spring-driven camera shake.
 
 > Built for Roblox (Type Soul / Peroxide style). Sync it into Studio with
 > [Rojo](https://rojo.space): `rojo serve` against `combat/default.project.json`.
+>
+> **Visual layer** (viewmodel hand-sway, slash trail, arc swings + camera tilt,
+> hit reactions, stylized maps/lighting, Hollow VFX): see [`VISUALS.md`](VISUALS.md).
 
 ## Where everything lands in the DataModel
 
