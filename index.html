@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<!-- SOULRIFT — 3D first-person anime action RPG (Type Soul / Peroxide inspired).
+     Standalone prototype. Three.js is loaded as an ES module via import map.
+     All gameplay logic lives in /js (ES modules); a single stylesheet is used. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOULRIFT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/soulrift.css">
+
+  <!-- Map the bare "three" specifier so modules can `import * as THREE from 'three'` -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- ===================== LANDING / RACE SELECT ===================== -->
+  <section id="landing" class="landing">
+    <div class="landing-bg" aria-hidden="true"></div>
+    <header class="landing-head">
+      <h1 class="game-title" data-text="SOULRIFT">SOULRIFT</h1>
+      <p class="game-sub">Choose your path between worlds</p>
+    </header>
+    <div id="raceGrid" class="race-grid"><!-- cards injected by RaceSelect.js --></div>
+    <p class="landing-foot">Hover a soul to learn its path · Click to awaken</p>
+  </section>
+
+  <!-- ===================== GAME LAYER ===================== -->
+  <div id="gameLayer" class="game-layer hidden">
+    <canvas id="gl"></canvas>
+
+    <!-- Screen-space VFX overlay: parry flash, reiatsu vignette, damage edges -->
+    <div id="screenfx" class="screenfx" aria-hidden="true">
+      <div class="reiatsu-vignette"></div>
+      <div class="parry-overlay"></div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hud" aria-hidden="false">
+      <div id="crosshair" class="crosshair"><span></span><span></span><span></span><span></span></div>
+      <div id="comboCounter" class="combo-counter"></div>
+      <div id="milestoneToast" class="milestone-toast"></div>
+
+      <div class="hud-bottom">
+        <div class="hud-vitals">
+          <div class="bar hp-bar">
+            <span class="bar-label">HP</span>
+            <div class="bar-track"><div id="hpFill" class="bar-fill hp"></div></div>
+            <span id="hpText" class="bar-num">100/100</span>
+          </div>
+          <div class="bar xp-bar">
+            <span class="bar-label">XP · Lv <b id="lvlValue">1</b></span>
+            <div class="bar-track"><div id="xpFill" class="bar-fill xp"></div></div>
+          </div>
+          <div class="bar res-bar">
+            <span class="bar-label" id="resLabel">Reiryoku</span>
+            <div class="bar-track"><div id="resFill" class="bar-fill res"></div></div>
+          </div>
+        </div>
+
+        <div class="hud-tier">
+          <span class="tier-label">TIER</span>
+          <strong id="tierValue">Trainee</strong>
+          <div id="skillBar" class="skill-bar"></div>
+        </div>
+      </div>
+
+      <div id="deathBanner" class="death-banner">
+        <h2>YOU FELL</h2>
+        <p>Your spirit reforms... progress preserved.</p>
+      </div>
+    </div>
+
+    <!-- Milestone instance prompt (Inner World / Bankai trial etc.) -->
+    <div id="instanceOverlay" class="instance-overlay">
+      <div class="instance-card">
+        <h2 id="instanceTitle">Milestone</h2>
+        <p id="instanceDesc">Description</p>
+        <button id="instanceConfirm" class="instance-btn">Enter</button>
+      </div>
+    </div>
+
+    <p id="lockHint" class="lock-hint hidden">Click to enter · WASD move · Shift sprint · Q+dir dash · LMB combo · RMB heavy · F block/parry · G reiatsu</p>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

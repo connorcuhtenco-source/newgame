@@ -1,0 +1,421 @@
+/* SOULRIFT — single stylesheet for the whole game (landing + HUD + VFX).
+   Sections: 1) Base/Reset  2) Landing & Race Cards  3) Game Layer/Canvas
+   4) Screen VFX (parry flash, reiatsu vignette, damage edges)  5) HUD
+   6) Overlays (milestone instance, death, lock hint)  7) Animations */
+
+/* ===================== 1. BASE / RESET ===================== */
+:root {
+  --bg: #070a14;
+  --panel: rgba(14, 20, 36, 0.78);
+  --ink: #e8f0ff;
+  --muted: #8aa0c8;
+  --accent: #6fd3ff;
+  --hp: #ff4d5e;
+  --xp: #ffd166;
+  --reiatsu-color: #7df9ff;
+  --reiatsu-intensity: 0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  overflow: hidden;
+  cursor: default;
+}
+
+.hidden { display: none !important; }
+
+/* ===================== 2. LANDING / RACE SELECT ===================== */
+.landing {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.2rem;
+  padding: 4vh 4vw;
+  z-index: 30;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.landing.selecting { opacity: 0; transform: scale(1.06); pointer-events: none; }
+
+.landing-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 600px at 50% -10%, rgba(111, 211, 255, 0.18), transparent 60%),
+    radial-gradient(700px 500px at 80% 110%, rgba(255, 111, 139, 0.14), transparent 60%),
+    linear-gradient(180deg, #070a14 0%, #0b1024 60%, #05060d 100%);
+  z-index: -1;
+}
+.landing-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(111, 211, 255, 0.06) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(111, 211, 255, 0.06) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at 50% 60%, #000 0%, transparent 75%);
+  animation: gridDrift 24s linear infinite;
+}
+
+.landing-head { text-align: center; }
+.game-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2.8rem, 8vw, 6rem);
+  letter-spacing: 0.18em;
+  background: linear-gradient(180deg, #ffffff, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  position: relative;
+  text-shadow: 0 0 40px rgba(111, 211, 255, 0.35);
+}
+.game-title::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #ff6f8b, transparent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: blur(2px);
+  opacity: 0.5;
+  transform: translate(3px, 2px);
+  z-index: -1;
+}
+.game-sub { color: var(--muted); letter-spacing: 0.35em; text-transform: uppercase; font-size: 0.9rem; margin-top: 0.6rem; }
+
+.race-grid {
+  display: flex;
+  gap: 1.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.race-card {
+  --accent: #6fd3ff;
+  position: relative;
+  width: min(330px, 90vw);
+  padding: 1.6rem 1.4rem 1.4rem;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  transition: transform 0.28s cubic-bezier(.2,.9,.3,1), box-shadow 0.28s, border-color 0.28s;
+  cursor: pointer;
+}
+.race-card .race-card-glow {
+  position: absolute;
+  inset: -40% -40% auto -40%;
+  height: 70%;
+  background: radial-gradient(closest-side, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.race-card.hovered,
+.race-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  border-color: var(--accent);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.5), 0 0 30px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.race-card.hovered .race-card-glow { opacity: 0.22; }
+
+.race-icon {
+  width: 64px; height: 64px;
+  margin-bottom: 0.8rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 70%, #000), #0a0f1c);
+  border: 1px solid var(--accent);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.race-icon::after { font-size: 1.8rem; }
+.race-icon[data-weapon="katana"]::after { content: "⚔"; }
+.race-icon[data-weapon="bow"]::after { content: "🏹"; }
+.race-icon[data-weapon="claws"]::after { content: "👹"; }
+
+.race-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.race-role { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.18em; margin-bottom: 0.7rem; }
+.race-blurb { color: var(--ink); opacity: 0.85; font-size: 0.95rem; line-height: 1.4; min-height: 5.2em; }
+
+.race-stats { list-style: none; display: flex; gap: 0.6rem; margin: 1rem 0; }
+.race-stats li {
+  flex: 1;
+  text-align: center;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 0.5rem 0.2rem;
+}
+.race-stats span { display: block; color: var(--muted); font-size: 0.66rem; letter-spacing: 0.1em; }
+.race-stats b { color: var(--ink); font-size: 1.1rem; }
+
+.race-pick-btn {
+  width: 100%;
+  padding: 0.8rem;
+  margin-top: 0.3rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #04101c;
+  background: var(--accent);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.1s;
+}
+.race-pick-btn:hover { filter: brightness(1.12); }
+.race-pick-btn:active { transform: scale(0.97); }
+
+.landing-foot { color: var(--muted); font-size: 0.85rem; letter-spacing: 0.1em; }
+
+/* ===================== 3. GAME LAYER / CANVAS ===================== */
+.game-layer { position: fixed; inset: 0; z-index: 10; }
+#gl { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+/* ===================== 4. SCREEN VFX ===================== */
+.screenfx { position: fixed; inset: 0; z-index: 18; pointer-events: none; overflow: hidden; }
+
+/* Reiatsu aura vignette — intensity driven by --reiatsu-intensity */
+.reiatsu-vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 calc(120px + 220px * var(--reiatsu-intensity))
+              color-mix(in srgb, var(--reiatsu-color) 70%, transparent);
+  opacity: var(--reiatsu-intensity);
+  transition: opacity 0.15s linear;
+}
+
+/* Perfect-parry full-screen flash */
+.parry-overlay { position: absolute; inset: 0; background: #ffffff; opacity: 0; }
+.screenfx.parry-flash .parry-overlay { animation: parryFlash 0.32s ease-out; }
+
+/* Directional damage indicator (created dynamically). Rotated to point at the
+   attacker via --dmg-rot; red arc sits on the "front" (top) edge. */
+.dmg-indicator {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--dmg-rot, 0rad));
+  animation: dmgPulse 0.7s ease-out forwards;
+}
+.dmg-indicator::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 28%;
+  background: radial-gradient(120% 100% at 50% 0%, rgba(255, 40, 60, 0.6), transparent 70%);
+}
+
+/* ===================== 5. HUD ===================== */
+.hud { position: fixed; inset: 0; z-index: 20; pointer-events: none; font-family: 'Rajdhani', sans-serif; }
+
+.crosshair {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 22px; height: 22px;
+  transform: translate(-50%, -50%);
+  transition: transform 0.08s;
+}
+.crosshair span {
+  position: absolute;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 0 4px rgba(0,0,0,0.7);
+}
+.crosshair span:nth-child(1) { top: 0; left: 50%; width: 2px; height: 7px; transform: translateX(-50%); }
+.crosshair span:nth-child(2) { bottom: 0; left: 50%; width: 2px; height: 7px; transform: translateX(-50%); }
+.crosshair span:nth-child(3) { left: 0; top: 50%; height: 2px; width: 7px; transform: translateY(-50%); }
+.crosshair span:nth-child(4) { right: 0; top: 50%; height: 2px; width: 7px; transform: translateY(-50%); }
+.crosshair.hit { animation: hitMark 0.18s ease-out; }
+.crosshair.hit span { background: #ff5a5a; }
+
+.combo-counter {
+  position: absolute;
+  top: 30%; left: 50%;
+  transform: translate(-50%, 0) scale(0.8);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 70%, transparent);
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.combo-counter.active { opacity: 1; transform: translate(-50%, -10px) scale(1.1); }
+
+.milestone-toast {
+  position: absolute;
+  top: 12%; left: 50%;
+  transform: translate(-50%, -20px);
+  max-width: 70vw;
+  text-align: center;
+  padding: 0.9rem 1.6rem;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 24px color-mix(in srgb, var(--accent) 40%, transparent);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.milestone-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.hud-bottom {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 1.4rem 1.8rem;
+  gap: 1.5rem;
+}
+
+.hud-vitals { display: flex; flex-direction: column; gap: 0.55rem; width: min(360px, 42vw); }
+.bar { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 0.6rem; }
+.bar-label { font-size: 0.74rem; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+.bar-label b { color: var(--ink); }
+.bar-track {
+  height: 12px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.bar-fill { height: 100%; width: 100%; border-radius: 8px; transition: width 0.2s ease; }
+.bar-fill.hp { background: linear-gradient(90deg, #ff4d5e, #ff8a5b); }
+.bar-fill.hp.low { animation: lowHp 0.8s ease-in-out infinite; }
+.bar-fill.xp { background: linear-gradient(90deg, #ffd166, #ffe9a8); }
+.bar-fill.res { background: var(--reiatsu-color); }
+.bar-num { font-size: 0.8rem; color: var(--ink); min-width: 56px; text-align: right; }
+
+.hud-tier { text-align: right; }
+.tier-label { display: block; color: var(--muted); font-size: 0.7rem; letter-spacing: 0.2em; }
+#tierValue { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; color: var(--accent); }
+.skill-bar { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.6rem; }
+.skill-slot {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 0.4rem 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  min-width: 44px;
+}
+.skill-slot kbd {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  color: var(--accent);
+}
+.skill-slot span { font-size: 0.6rem; color: var(--muted); }
+
+/* ===================== 6. OVERLAYS ===================== */
+.death-banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: rgba(8, 2, 6, 0.7);
+  color: #ff6f8b;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.death-banner.show { opacity: 1; }
+.death-banner h2 { font-family: 'Orbitron', sans-serif; font-size: clamp(2rem, 7vw, 4rem); letter-spacing: 0.2em; }
+.death-banner p { color: var(--muted); }
+
+.instance-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 7, 16, 0.85);
+  backdrop-filter: blur(6px);
+}
+.instance-overlay.show { display: flex; }
+.instance-card {
+  text-align: center;
+  max-width: 440px;
+  padding: 2.4rem 2rem;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.instance-card h2 { font-family: 'Orbitron', sans-serif; color: var(--accent); margin-bottom: 0.8rem; letter-spacing: 0.08em; }
+.instance-card p { color: var(--ink); opacity: 0.85; margin-bottom: 1.6rem; line-height: 1.5; }
+.instance-btn {
+  pointer-events: auto;
+  padding: 0.8rem 2.4rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #04101c;
+  background: var(--accent);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.instance-btn:hover { filter: brightness(1.12); }
+
+.lock-hint {
+  position: fixed;
+  bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 22;
+  padding: 0.5rem 1rem;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+/* ===================== 7. ANIMATIONS ===================== */
+@keyframes gridDrift { from { background-position: 0 0; } to { background-position: 46px 92px; } }
+@keyframes parryFlash {
+  0% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+@keyframes dmgPulse {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+@keyframes hitMark {
+  0% { transform: translate(-50%, -50%) scale(1.5); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes lowHp {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.6); }
+}
+
+@media (max-width: 720px) {
+  .hud-vitals { width: 60vw; }
+  .race-blurb { min-height: auto; }
+}
