@@ -67,8 +67,28 @@ end
 -- Apply the full Soul Society atmosphere. `mapRoot` defaults to Workspace.
 function SoulSocietyAtmosphere.apply(mapRoot: Instance?)
 	local root = mapRoot or workspace
+	local Lighting = game:GetService("Lighting")
 
-	ToonLighting.apply(true)
+	-- Deep indigo nocturnal base.
+	ToonLighting.apply(false)
+	Lighting.Ambient = Color3.fromRGB(22, 14, 40)
+	Lighting.OutdoorAmbient = Color3.fromRGB(38, 28, 70)
+	Lighting.Brightness = 1.4
+	Lighting.ClockTime = 0.1
+
+	-- Volumetric-ish fog: Atmosphere haze + legacy distance fog tinted indigo so
+	-- lantern light and Reishi flakes read against deep murk.
+	local atmos = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
+	atmos.Density = 0.42
+	atmos.Haze = 1.8
+	atmos.Color = Color3.fromRGB(60, 45, 110)
+	atmos.Decay = Color3.fromRGB(30, 20, 70)
+	atmos.Glare = 0.2
+	atmos.Parent = Lighting
+	Lighting.FogColor = Color3.fromRGB(30, 22, 60)
+	Lighting.FogStart = 30
+	Lighting.FogEnd = 320
+
 	ReishiDrift.start(45)
 
 	collectLanterns(root)

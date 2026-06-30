@@ -159,7 +159,8 @@ function EnemyVfx.hitReaction(model: Model, position: Vector3?)
 	if pos then
 		EffectsController.hit(pos)
 	end
-	HitFlash.flash(model, VisualConfig.HitFlash.Duration)
+	-- Material-swap white flash (0.05s hold) with a smooth color transition back.
+	HitFlash.materialFlash(model, VisualConfig.HitFlash.Duration, 0.12)
 
 	-- Flinch: prefer an authored animation, else a procedural stagger.
 	local humanoid = model:FindFirstChildOfClass("Humanoid")

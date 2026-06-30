@@ -20,14 +20,19 @@ to apply in-engine.
 
 Requiring the existing client/server already activates:
 
-- **Hand-sway** — `ViewmodelSway` is created by `ViewmodelController` and applied
-  every frame.
+- **Hand-sway** — `ViewmodelSway` (spring-mass-damper) is created by
+  `ViewmodelController` and applied every frame.
+- **Cubic-Bézier swings** — `BezierSwing` drives the anticipation/active/recovery
+  curve with per-strike easing + elastic settle, and couples camera **roll + FOV**
+  during the active phase.
 - **Slash trail** — `MotionTrail` streaks off the blade during each strike.
-- **Arc swing + camera tilt** — `SwingArc` drives the wind-up/strike/recovery
-  pose and rolls the camera into the cut.
+- **Impact VFX** — clashes/parries trigger `ImpactVfx`: screen-flash vignette,
+  stretched billboard sparks, and an expanding shockwave ring.
+- **Reiatsu aura (hold G)** — `ReiatsuAura`: chromatic-aberration vignette +
+  weapon aura particles.
 - **Hit reactions** — on a server-validated hit, every client runs
-  `EnemyVfx.hitReaction` (spark burst + 0.05s white flash + flinch) on the struck
-  character.
+  `EnemyVfx.hitReaction`: a **material-swap** 0.05s white self-illum flash
+  (smooth transition back) + spark + flinch.
 - **Hollow dressing** — any `Model` with the CollectionService tag `Hollow` is
   auto-given glowing eyes + shadow aura.
 
@@ -157,3 +162,84 @@ Author the meshes/textures in Blender (or similar) and import as `MeshPart`s wit
   terrain) + your own white-void skybox ids swapped into `HuecoMundoSky`.
 
 All visual tuning lives in `src/shared/VisualConfig.luau`.
+
+---
+
+# Output requirements (advanced pass)
+
+## (1) Viewmodel Spring-Sway Controller — the math
+
+`src/client/ViewmodelSway.luau`. Each axis is an independent **spring-mass-damper**
+(unit mass) integrated with semi-implicit Euler (shared `Spring.luau`):
+
+```
+a = (-k * (x - target)) - (c * v)     -- F = -kx - cv, m = 1
+v = v + a * dt                        -- update velocity first (semi-implicit)
+x = x + v * dt                        -- then position
+```
+
+- `k` = stiffness, `c` = damping. Pick `c ≈ 2*sqrt(k)` (critical) for snappy,
+  non-oscillatory settling — anything less wobbles, anything more feels mushy.
+- **Sway** injects velocity each frame proportional to the camera's angular
+  velocity: `Δv_rot ∝ -(dPitch,dYaw)/dt` (lag opposite the turn) plus a roll term
+  `∝ +dYaw` (bank into the turn). Yaw deltas are wrapped to `[-π,π]` so a wrap
+  never spikes the spring. Output is clamped to `MaxLook`/`MaxPos` so the weapon
+  can't leave frame.
+- **Bob** is a true figure-8 (Lissajous 1:2): `x = sin(φ)`, `y = sin(2φ)`, with
+  `φ` advancing at `BobFrequency * speed01`. Idle adds a slow breathing sine.
+
+Result each frame: `CFrame.new(pos + bob) * CFrame.Angles(rot.X, rot.Y, rot.Z)`,
+multiplied into `camera.CFrame * REST * sway * swing`.
+
+## (2) Cubic-Bézier Weapon Swing System — the logic
+
+`src/client/BezierSwing.luau`. Phase split **15% / 60% / 25%** (anticipation /
+active / recovery). Each phase remaps its local time `t∈[0,1]` through a CSS-style
+**cubic-bezier(x1,y1,x2,y2)** timing function (per-strike handles in
+`VisualConfig.Bezier.Curves`, so all four hits differ), then interpolates between
+key poses:
+
+```
+rest --anticipation(ease-out)--> cocked-back --active(slow→snap)--> follow-through
+     --recovery(ease + elastic settle)--> rest
+```
+
+- The bezier solve is Newton-Raphson: solve `Bx(u)=t` for the curve parameter `u`,
+  then evaluate `By(u)` for the eased value.
+- Recovery blends the eased return with `easeOutElastic` for a subtle bounce
+  settle (`ElasticAmplitude` / `ElasticPeriod`).
+- **Camera-impact coupling**: during Active, `cameraRoll`, `cameraPitch` (finisher)
+  and `fovDelta` follow a `sin(πt)` envelope peaking mid-strike. The controller
+  applies the FOV punch additively and removes it next frame so it composes with
+  sprint/zoom FOV.
+- Handedness alternates per combo; hit 4 is a centered overhead.
+
+## (3) Asset directory structure
+
+Rojo maps `combat/src` into the DataModel (`combat/default.project.json`):
+
+```
+combat/src/shared      -> ReplicatedStorage/Combat            (modules + config)
+combat/src/shared/Assets -> ReplicatedStorage/Combat/Assets   (your art; see below)
+combat/src/shared/Environment -> ReplicatedStorage/Combat/Environment
+combat/src/client      -> StarterPlayerScripts/CombatClient
+combat/src/server      -> ServerScriptService/CombatServer
+```
+
+Author content goes under **`ReplicatedStorage/Combat/Assets`** (commit `.rbxm`
+files into `combat/src/shared/Assets/…` or build in Studio under that folder):
+
+```
+Assets/
+  Viewmodel              rigged FP arms + welded weapon (DmgPoint + TrailTop/Bottom)
+  Weapons/{Zanpakuto,QuincyBow,...}
+  Enemies/{Hollow,Quincy,SoulReaper}   (name an eye part "*eye*")
+  Maps/{SoulSocietyMap,HuecoMundoMap}  (tag lanterns "Lantern")
+```
+
+Import meshes as `MeshPart`s with a `SurfaceAppearance` (ColorMap / MetalnessMap /
+NormalMap / RoughnessMap) for PBR; set the per-material engine properties from
+`VisualConfig.Materials` (steel blade, Tsuka wrap, Tsuba, Quincy neon bow). If
+`Assets/Viewmodel` exists, `ViewmodelController` clones it and loads the swing
+animations from `CombatConfig.Animations`; otherwise it generates the placeholder
+katana so everything still runs.

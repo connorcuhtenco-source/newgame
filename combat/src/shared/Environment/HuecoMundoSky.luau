@@ -37,10 +37,15 @@ function HuecoMundoSky.apply()
 	Lighting.GeographicLatitude = 20
 
 	-- Toon night base, then crank contrast for that stark-white/black look.
+	-- Near-black ambient + a single bright low-angle moon-light = stark white sand
+	-- with completely black silhouettes (the requested high-contrast palette).
 	ToonLighting.apply(false)
-	Lighting.Ambient = Color3.fromRGB(28, 30, 40)
-	Lighting.OutdoorAmbient = Color3.fromRGB(60, 64, 82)
-	Lighting.Brightness = 2.2
+	Lighting.Ambient = Color3.fromRGB(6, 7, 12) -- almost no fill -> deep black shadows
+	Lighting.OutdoorAmbient = Color3.fromRGB(14, 16, 26)
+	Lighting.Brightness = 3.4 -- strong key light blows the sand to white
+	Lighting.ShadowSoftness = 0
+	Lighting.GeographicLatitude = 0
+	Lighting.ExposureCompensation = 0.15
 
 	local cc = Lighting:FindFirstChild("ToonContrast") :: ColorCorrectionEffect?
 	if cc then

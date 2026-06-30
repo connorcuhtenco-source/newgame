@@ -8,9 +8,18 @@
 --   * walking adds a subtle figure-8 bob,
 --   * standing still adds a faint breathing drift.
 --
--- It is built from two damped springs (one for rotation, one for position) from
--- the shared Spring module, kicked by the camera's angular velocity. Because the
--- springs are critically damped, motion is smooth and never robotic.
+-- MATH — Spring-Mass-Damper. Each axis is integrated as a damped harmonic
+-- oscillator with unit mass:
+--
+--       a = (-k * (x - target)) - (c * v)        -- F = -kx - cv,  m = 1
+--       v += a * dt                              -- semi-implicit Euler
+--       x += v * dt
+--
+-- where k = stiffness, c = damping. The shared Spring module implements exactly
+-- this; we keep two springs (rotation + position) and inject velocity ("impulse"
+-- = Δv) proportional to the camera's angular velocity each frame, so a fast turn
+-- imparts a large kick that then decays smoothly. Choosing c near the critical
+-- value 2*sqrt(k) gives quick, non-oscillatory settling (never robotic).
 --
 -- Usage (per RenderStep, BEFORE positioning the viewmodel):
 --   local offset = sway:update(dt, camera, speed01)   -- returns a CFrame
@@ -84,10 +93,11 @@ function ViewmodelSway:update(dt: number, camera: Camera, speed01: number): CFra
 		math.clamp(pos.Z, -cfg.MaxPos, cfg.MaxPos)
 	)
 
-	-- --- Walk bob (figure-8) blended with idle breathing. ---
+	-- --- Walk bob: a true figure-8 (Lissajous 1:2) blended with breathing. ---
+	-- x traces at the step frequency, y at double frequency -> the classic ∞ path.
 	self._bobPhase += dt * cfg.BobFrequency * math.max(speed01, 0)
-	local bobX = math.cos(self._bobPhase) * cfg.BobAmount * speed01
-	local bobY = math.abs(math.sin(self._bobPhase)) * cfg.BobAmount * speed01
+	local bobX = math.sin(self._bobPhase) * cfg.BobAmount * speed01
+	local bobY = math.sin(self._bobPhase * 2) * (cfg.BobAmount * 0.5) * speed01
 	local breathe = math.sin(self._time * cfg.BreatheFrequency) * cfg.BreatheAmount * (1 - speed01)
 
 	local bob = Vector3.new(bobX, bobY + breathe, 0)

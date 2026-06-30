@@ -15,6 +15,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local CollectionService = game:GetService("CollectionService")
+local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Remotes = require(ReplicatedStorage.Combat.Remotes)
@@ -27,6 +28,9 @@ local ViewmodelController = require(script.ViewmodelController)
 local CameraShaker = require(script.CameraShaker)
 local EffectsController = require(script.EffectsController)
 local EnemyVfx = require(script.EnemyVfx)
+local ImpactVfx = require(script.ImpactVfx)
+local ReiatsuAura = require(script.ReiatsuAura)
+local VisualConfig = require(ReplicatedStorage.Combat.VisualConfig)
 
 local localPlayer = Players.LocalPlayer
 
@@ -187,7 +191,8 @@ Remotes.CombatEffect.OnClientEvent:Connect(function(effectKind: string, payload)
 		end
 	elseif effectKind == "Parry" then
 		if pos then
-			EffectsController.parry(pos)
+			-- Screen-flash vignette + stretched sparks + shockwave ring + sfx.
+			ImpactVfx.parry(pos)
 		end
 		if payload.victim == localPlayer then
 			-- We are the parrier.
@@ -195,7 +200,7 @@ Remotes.CombatEffect.OnClientEvent:Connect(function(effectKind: string, payload)
 		end
 	elseif effectKind == "Clash" then
 		if pos then
-			EffectsController.clash(pos)
+			ImpactVfx.clash(pos)
 		end
 		if payload.attacker == localPlayer or payload.other == localPlayer then
 			cameraShaker:shake(CombatConfig.Camera.ClashImpulse)
@@ -236,6 +241,20 @@ for _, tagged in CollectionService:GetTagged("Hollow") do
 	setupHollow(tagged)
 end
 CollectionService:GetInstanceAddedSignal("Hollow"):Connect(setupHollow)
+
+-- == Reiatsu charging aura (hold G) ======================================
+
+local reiatsu = ReiatsuAura.new()
+reiatsu:setWeapon(viewmodel:getWeapon())
+
+ContextActionService:BindAction("SoulriftReiatsu", function(_, inputState: Enum.UserInputState)
+	if inputState == Enum.UserInputState.Begin then
+		reiatsu:setActive(true)
+	elseif inputState == Enum.UserInputState.End or inputState == Enum.UserInputState.Cancel then
+		reiatsu:setActive(false)
+	end
+	return Enum.ContextActionResult.Pass
+end, false, VisualConfig.Reiatsu.InputKey)
 
 -- == Boot ================================================================
 

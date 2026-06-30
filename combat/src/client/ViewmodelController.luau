@@ -25,7 +25,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Combat.CombatConfig)
 local ViewmodelSway = require(script.ViewmodelSway)
-local SwingArc = require(script.SwingArc)
+local BezierSwing = require(script.BezierSwing)
 local MotionTrail = require(script.MotionTrail)
 
 local ViewmodelController = {}
@@ -95,9 +95,10 @@ function ViewmodelController.new(): ViewmodelController
 		-- Procedural swing state.
 		_swinging = false,
 		_swingT = 0,
-		_swingDur = SwingArc.duration(),
+		_swingDur = BezierSwing.duration(),
 		_swingCombo = 1,
 		_blocking = false,
+		_appliedFov = 0, -- FOV punch we currently own (so we can cleanly remove it)
 	}, ViewmodelController)
 
 	self:_buildModel()
@@ -259,13 +260,15 @@ function ViewmodelController:_render(dt: number)
 	-- Spring hand-sway (look-lag, bob, breathing).
 	local swayOffset = self._sway:update(dt, camera, self._speed01)
 
-	-- Procedural swing arc + coupled camera tilt.
+	-- Cubic-Bezier swing + coupled camera tilt + FOV punch.
 	local swingOffset = CFrame.identity
+	local fovDelta = 0
 	if self._swinging then
 		self._swingT += dt
 		local alpha = math.clamp(self._swingT / self._swingDur, 0, 1)
-		local result = SwingArc.evaluate(self._swingCombo, alpha)
+		local result = BezierSwing.evaluate(self._swingCombo, alpha)
 		swingOffset = result.offset
+		fovDelta = result.fovDelta
 		-- Tilt the view INTO the swing (applied after the camera is positioned).
 		if result.cameraRoll ~= 0 or result.cameraPitch ~= 0 then
 			camera.CFrame = camera.CFrame * CFrame.Angles(result.cameraPitch, 0, result.cameraRoll)
@@ -274,6 +277,11 @@ function ViewmodelController:_render(dt: number)
 			self._swinging = false
 		end
 	end
+
+	-- Apply the FOV punch additively, removing whatever we applied last frame so
+	-- we compose cleanly with other systems (sprint FOV, etc).
+	camera.FieldOfView = camera.FieldOfView - self._appliedFov + fovDelta
+	self._appliedFov = fovDelta
 
 	model:PivotTo(camera.CFrame * baseOffset * swayOffset * swingOffset)
 end

@@ -47,6 +47,95 @@ VisualConfig.Swing = {
 	CameraPitchKick = math.rad(1.2),
 }
 
+-- Cubic-Bezier swing system (the upgraded "Slash Curve"). Phase split per spec:
+-- 15% anticipation / 60% active / 25% recovery, each driven by a CSS-style cubic
+-- bezier timing function so every strike has its own acceleration profile, plus
+-- an elastic settle on recovery and camera roll + FOV coupling during the strike.
+VisualConfig.Bezier = {
+	Phases = {
+		Anticipation = 0.15,
+		Active = 0.60,
+		Recovery = 0.25,
+	},
+	-- Per-strike cubic-bezier handles {x1, y1, x2, y2} for each phase, giving
+	-- each of the 4 combo hits a distinct feel. Index 1..4.
+	Curves = {
+		-- hit 1: quick diagonal
+		{
+			anticipation = { 0.30, 0.00, 0.40, 1.00 }, -- ease-out cock-back
+			active = { 0.85, 0.00, 0.90, 0.35 }, -- slow->snap accel
+			recovery = { 0.20, 0.00, 0.20, 1.00 }, -- ease-out settle
+		},
+		-- hit 2: reverse diagonal, snappier
+		{
+			anticipation = { 0.25, 0.00, 0.35, 1.00 },
+			active = { 0.90, 0.00, 0.95, 0.30 },
+			recovery = { 0.18, 0.00, 0.22, 1.00 },
+		},
+		-- hit 3: wide horizontal
+		{
+			anticipation = { 0.30, 0.00, 0.45, 1.00 },
+			active = { 0.80, 0.00, 0.92, 0.40 },
+			recovery = { 0.22, 0.00, 0.25, 1.00 },
+		},
+		-- hit 4: heavy overhead finisher
+		{
+			anticipation = { 0.35, 0.00, 0.50, 1.00 }, -- longer cock-back
+			active = { 0.95, 0.00, 0.98, 0.25 }, -- explosive
+			recovery = { 0.16, 0.00, 0.30, 1.00 },
+		},
+	},
+	-- Strength of the elastic overshoot blended into the recovery phase (0 = none).
+	ElasticAmplitude = 0.35,
+	ElasticPeriod = 0.4,
+	-- Camera-impact coupling during the Active phase.
+	CameraRoll = math.rad(2.4), -- peak roll into the cut
+	CameraPitchKick = math.rad(1.4), -- finisher downward kick
+	FovKick = 6.0, -- degrees of FOV punch at peak of the strike
+}
+
+-- Advanced clash/parry impact VFX.
+VisualConfig.Impact = {
+	ScreenFlash = {
+		Color = Color3.fromRGB(255, 255, 255),
+		ParryDuration = 0.18,
+		ClashDuration = 0.26,
+		Peak = 0.55, -- max screen coverage opacity (0..1)
+	},
+	Shockwave = {
+		-- Optional authored ring texture; "" falls back to a neon expanding disc.
+		RingTexture = "",
+		Color = Color3.fromRGB(190, 225, 255),
+		ParryRadius = 9,
+		ClashRadius = 16,
+		Duration = 0.35,
+	},
+	Sparks = {
+		Texture = "rbxasset://textures/particles/sparkles_main.dds",
+		Color = Color3.fromRGB(255, 240, 200),
+		ParryCount = 28,
+		ClashCount = 64,
+		Speed = NumberRange.new(40, 95),
+		Squash = 3.0, -- stretches billboards along travel (motion-streak look)
+	},
+}
+
+-- Reiatsu charging aura (hold G): screen-space vignette w/ faux chromatic
+-- aberration + aura particles around the first-person weapon.
+VisualConfig.Reiatsu = {
+	VignetteTexture = "", -- optional radial vignette image; "" uses edge gradients
+	CoreColor = Color3.fromRGB(120, 200, 255),
+	AberrationColor1 = Color3.fromRGB(255, 60, 90), -- red fringe
+	AberrationColor2 = Color3.fromRGB(60, 140, 255), -- blue fringe
+	BorderColor = Color3.fromRGB(40, 10, 60), -- "burning" dark border tint
+	MaxOpacity = 0.55,
+	FadeTime = 0.25,
+	PulseSpeed = 7,
+	AuraRate = 60,
+	AuraColor = Color3.fromRGB(150, 210, 255),
+	InputKey = Enum.KeyCode.G,
+}
+
 -- Emissive motion-trail ribbon on the blade.
 VisualConfig.Trail = {
 	Lifetime = 0.18, -- seconds the ribbon persists
